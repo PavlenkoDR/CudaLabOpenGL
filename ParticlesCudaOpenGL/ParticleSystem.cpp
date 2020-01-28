@@ -4,10 +4,13 @@
 #include <ctime>
 #include <thread>
 #include <chrono>
+#include "kernel.h"
 
 int previousTime = 0;
 int refreshTime = 10;
 int particlesCount = 100;
+
+bool useCUDA = true;
 
 ParticleSystem::ParticleSystem()
 {
@@ -48,11 +51,18 @@ void ParticleSystem::MoveParticles()
 			particles[i].Collide(particles[j]);
 		}
 	}
-	for (auto& particle : particles)
+	if (useCUDA)
 	{
-		//std::cout << "Moved by " << particle.Move(border) << " points\n" << std::endl;
-		particle.Move(border);
-		//std::cout << particle.position.x << " " << particle.position.y << " " << particle.position.z << std::endl;
+		KernelCUDAInstanse::getInstanse(&particles, &border)->MoveParticlesCUDA();
+	}
+	else
+	{
+		for (auto& particle : particles)
+		{
+			//std::cout << "Moved by " << particle.Move(border) << " points\n" << std::endl;
+			particle.Move(border);
+			//std::cout << particle.position.x << " " << particle.position.y << " " << particle.position.z << std::endl;
+		}
 	}
 }
 
@@ -64,11 +74,22 @@ void ParticleSystem::MoveParticlesByDeltaTime()
 		MoveParticles();
 		auto deltaTime = refreshTime - (time(0) - previousTime);
 		std::this_thread::sleep_for(std::chrono::milliseconds(deltaTime));
-		std::cout << "Refreshed after " << deltaTime << std::endl;
+		//std::cout << "Refreshed after " << deltaTime << std::endl;
 	}
 }
 
 void ParticleSystem::MoveParticlesByDeltaTimeAsync()
 {
 	thrd = std::async(std::launch::async, std::bind(&ParticleSystem::MoveParticlesByDeltaTime, this));
+}
+
+std::shared_ptr<ParticleSystem> ParticleSystemInstance::instance = nullptr;
+
+std::shared_ptr<ParticleSystem> ParticleSystemInstance::getInstanse()
+{
+	if (!instance)
+	{
+		instance = std::make_shared<ParticleSystem>();
+	}
+	return instance;
 }

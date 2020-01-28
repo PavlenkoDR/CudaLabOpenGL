@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Particle.h"
+#include "ParticleSystem.h"
 
 #include <vector>
 #include <future>
@@ -19,5 +20,13 @@ public:
 	void MoveParticles();
 	void MoveParticlesByDeltaTime();
 	void MoveParticlesByDeltaTimeAsync();
+};
+
+class ParticleSystemInstance
+{
+public:
+	static std::shared_ptr<ParticleSystem> getInstanse();
+private:
+	static std::shared_ptr<ParticleSystem> instance;
 };
 
